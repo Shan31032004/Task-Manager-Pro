@@ -1,0 +1,45 @@
+version: "3.8"
+
+services:
+  backend:
+    build:
+      context: ./demo
+      dockerfile: Dockerfile
+    container_name: taskmanager-backend
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mongo
+    environment:
+      - SPRING_DATA_MONGODB_URI=mongodb://mongo:27017/taskmanager
+    networks:
+      - app-network
+
+  frontend:
+    build:
+      context: ./task-manager-mui
+      dockerfile: Dockerfile
+    container_name: taskmanager-frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+  mongo:
+    image: mongo:5
+    container_name: mongo-db
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - app-network
+
+volumes:
+  mongo-data:
+
+networks:
+  app-network:
+    driver: bridge

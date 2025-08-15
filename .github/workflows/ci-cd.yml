@@ -10,7 +10,7 @@ on:
 
 jobs:
   backend:
-    name: Build & Test Backend
+    name: Build & Push Backend Docker
     runs-on: ubuntu-latest
 
     steps:
@@ -24,16 +24,12 @@ jobs:
         java-version: 20
 
     - name: Build Backend
-      working-directory: ./demo   # your backend folder
+      working-directory: ./demo
       run: mvn clean install
 
     - name: Run Backend Tests
       working-directory: ./demo
       run: mvn test
-
-    - name: Build Backend Docker Image
-      working-directory: ./demo
-      run: docker build -t ${{ secrets.DOCKER_USERNAME }}/task-manager-backend:latest .
 
     - name: Login to DockerHub
       uses: docker/login-action@v2
@@ -41,11 +37,15 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
+    - name: Build Backend Docker Image
+      working-directory: ./demo
+      run: docker build -t ${{ secrets.DOCKER_USERNAME }}/task-manager-backend:latest .
+
     - name: Push Backend Docker Image
       run: docker push ${{ secrets.DOCKER_USERNAME }}/task-manager-backend:latest
 
   frontend:
-    name: Build & Deploy Frontend
+    name: Build & Push Frontend Docker
     runs-on: ubuntu-latest
     needs: backend
 
@@ -59,16 +59,12 @@ jobs:
         node-version: 20
 
     - name: Install Frontend Dependencies
-      working-directory: ./task-manager-mui  # your frontend folder
+      working-directory: ./task-manager-mui
       run: npm install
 
     - name: Build Frontend
       working-directory: ./task-manager-mui
       run: npm run build
-
-    - name: Build Frontend Docker Image
-      working-directory: ./task-manager-mui
-      run: docker build -t ${{ secrets.DOCKER_USERNAME }}/task-manager-frontend:latest .
 
     - name: Login to DockerHub
       uses: docker/login-action@v2
@@ -76,16 +72,9 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
+    - name: Build Frontend Docker Image
+      working-directory: ./task-manager-mui
+      run: docker build -t ${{ secrets.DOCKER_USERNAME }}/task-manager-frontend:latest .
+
     - name: Push Frontend Docker Image
       run: docker push ${{ secrets.DOCKER_USERNAME }}/task-manager-frontend:latest
-
-    - name: Set up kubectl
-      uses: azure/setup-kubectl@v3
-      with:
-        version: 'v1.27.0'
-
-    - name: Deploy Backend to Kubernetes
-      run: kubectl set image deployment/backend-deployment backend=${{ secrets.DOCKER_USERNAME }}/task-manager-backend:latest
-
-    - name: Deploy Frontend to Kubernetes
-      run: kubectl set image deployment/frontend-deployment frontend=${{ secrets.DOCKER_USERNAME }}/task-manager-frontend:latest
